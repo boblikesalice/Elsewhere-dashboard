@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>VIE Offers</title>
+<style>
+  :root {
+    /* light only: the page must look the same whatever the OS theme is */
+    color-scheme: light;
+
+    --text: #1d222c;
+    --muted: #6b7484;
+    --accent: #4f46e5;
+
+    /* frosted surfaces */
+    --glass: rgba(255, 255, 255, 0.68);
+    --glass-strong: rgba(255, 255, 255, 0.84);
+    --glass-border: rgba(255, 255, 255, 0.88);
+    --glass-shadow: 0 8px 30px rgba(64, 78, 130, 0.08);
+    --glass-shadow-hover: 0 14px 38px rgba(64, 78, 130, 0.13);
+    --glass-inset: inset 0 1px 0 rgba(255, 255, 255, 0.90);
+    --blur: 18px;
+
+    /* new offers */
+    --new-glass: rgba(226, 252, 242, 0.78);
+    --new-border: rgba(16, 185, 129, 0.38);
+    --new-text: #067a55;
+
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; }
+
+  /* The tinted backdrop lives on <html> so the blobs below always sit on top
+     of it — glass needs something behind it to be worth blurring. */
+  html {
+    min-height: 100%;
+    background: #f7f9fd linear-gradient(160deg, #f5f9ff 0%, #fbf7ff 46%, #f3fbfe 100%)
+                fixed;
+  }
+
+  body {
+    margin: 0;
+    padding: 0 0 56px;
+    background: transparent;
+    color: var(--text);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Two soft colour blobs, blurred: what the frosted panels refract.
+     Pure CSS gradients - no image, no request, works offline. */
+  body::before,
+  body::after {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.34;
+    pointer-events: none;
+  }
+
+  body::before {
+    width: 46vmax;
+    height: 46vmax;
+    top: -14vmax;
+    left: -10vmax;
+    background: radial-gradient(circle, #a9b8ff 0%, rgba(169, 184, 255, 0) 70%);
+  }
+
+  body::after {
+    width: 40vmax;
+    height: 40vmax;
+    top: 28vmax;
+    right: -12vmax;
+    background: radial-gradient(circle, #f7c4e6 0%, rgba(247, 196, 230, 0) 70%);
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 20px;
+  }
+
+  /* ---------- header ---------- */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--glass-strong);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(180%);
+    backdrop-filter: blur(var(--blur)) saturate(180%);
+    border-bottom: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    padding: 20px 0 18px;
+    margin-bottom: 28px;
+  }
+
+  h1 {
+    margin: 0 0 4px;
+    font-size: 22px;
+    font-weight: 650;
+    letter-spacing: -0.015em;
+  }
+
+  .updated {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 18px;
+  }
+
+  label {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  select {
+    font: inherit;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(10px) saturate(160%);
+    backdrop-filter: blur(10px) saturate(160%);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    box-shadow: var(--glass-inset);
+    padding: 7px 12px;
+    max-width: 100%;
+  }
+
+  select:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .count {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .count strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .count .new-count {
+    color: var(--new-text);
+    font-weight: 600;
+  }
+
+  /* ---------- grid ---------- */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    /* 1fr on the implicit rows: every row is sized on the tallest card of the
+       whole grid, so all the boxes end up strictly identical in height.
+       (Without it, grid only equalises cards within their own row.) */
+    grid-auto-rows: 1fr;
+    gap: 16px;
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--glass);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(160%);
+    backdrop-filter: blur(var(--blur)) saturate(160%);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    box-shadow: var(--glass-shadow), var(--glass-inset);
+    padding: 16px 16px 14px;
+    transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    background: var(--glass-strong);
+    box-shadow: var(--glass-shadow-hover), var(--glass-inset);
+  }
+
+  .card.is-new {
+    background: var(--new-glass);
+    border-color: var(--new-border);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .card h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.35;
+    flex: 1;
+  }
+
+  .card h2 a {
+    color: var(--text);
+    text-decoration: none;
+  }
+
+  .card h2 a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+  }
+
+  .badge {
+    flex: none;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: #fff;
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.30);
+    padding: 3px 8px;
+  }
+
+  .meta {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: auto;
+  }
+
+  .meta .company {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .empty {
+    color: var(--muted);
+    text-align: center;
+    padding: 48px 0;
+  }
+
+  /* Browsers without backdrop-filter would show plain translucent panels,
+     and the text over them would get hard to read -> go nearly opaque. */
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    header, .card, select { background: rgba(255, 255, 255, 0.94); }
+    .card.is-new { background: rgba(230, 253, 245, 0.96); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
+    .card:hover { transform: none; }
+  }
+
+  @media (max-width: 560px) {
+    .grid { grid-template-columns: 1fr; }
+    .count { margin-left: 0; width: 100%; }
+    header { position: static; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>VIE Offers</h1>
+    <p class="updated" id="updated"></p>
+
+    <div class="controls">
+      <label for="company">Company</label>
+      <select id="company">
+        <option value="">All</option>
+      </select>
+      <span class="count" id="count"></span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="grid" id="grid"></div>
+  <p class="empty" id="empty" hidden>No offers available for this filter.</p>
+</main>
+
+<script>
+const OFFERS = [{"company": "Société Générale", "id": "26000AG3", "title": "V.I.E. Front Office Trading Software Engineer", "location": "New York, Etats-Unis", "url": "https://careers.societegenerale.com/en/job-offers/vie-front-office-trading-software-engineer-26000AG3-en", "date": "2026-08-05", "source": "societegenerale", "is_new": false}, {"company": "Société Générale", "id": "26000EPO", "title": "V.I.E. Programmer Analyst Pre-trade applications", "location": "Montréal, Canada", "url": "https://careers.societegenerale.com/en/job-offers/vie-programmer-analyst-pre-trade-applications-26000EPO-en", "date": "2026-07-29", "source": "societegenerale", "is_new": false}, {"company": "Société Générale", "id": "26000H1Z", "title": "V.I.E. Communication Officer (m/f/d)", "location": "Francfort-sur-le-Main, Allemagne", "url": "https://careers.societegenerale.com/en/job-offers/vie-communication-officer-m-f-d-26000H1Z-en", "date": "2026-07-22", "source": "societegenerale", "is_new": false}, {"company": "Société Générale", "id": "26000GL9", "title": "V.I.E. Software Developer", "location": "Luxembourg, Luxembourg", "url": "https://careers.societegenerale.com/en/job-offers/vie-software-developer-26000GL9-en", "date": "2026-07-16", "source": "societegenerale", "is_new": false}, {"company": "Société Générale", "id": "26000GM4", "title": "V.I.E.  Supervision Accounting Agent", "location": "Luxembourg, Luxembourg", "url": "https://careers.societegenerale.com/en/job-offers/vie-supervision-accounting-agent-26000GM4-en", "date": "2026-07-13", "source": "societegenerale", "is_new": false}, {"company": "Société Générale", "id": "26000FCR", "title": "V.I.E. Custody Administrator", "location": "Dublin, Irlande", "url": "https://careers.societegenerale.com/en/job-offers/vie-custody-administrator-26000FCR-en", "date": "2026-07-10", "source": "societegenerale", "is_new": false}, {"company": "Société Générale", "id": "26000F3K", "title": "V.I.E. Front office developer", "location": "New York, Etats-Unis", "url": "https://careers.societegenerale.com/en/job-offers/vie-front-office-developer-26000F3K-en", "date": "2026-06-29", "source": "societegenerale", "is_new": false}, {"company": "Société Générale", "id": "26000FLR", "title": "VIE - Secrétaire Général – Juridique et Conformité (H/ F)", "location": "Milan, Italie", "url": "https://careers.societegenerale.com/offres-d-emploi/vie-secretaire-general-juridique-et-conformite-h-f-26000FLR-fr", "date": "2026-06-26", "source": "societegenerale", "is_new": false}, {"company": "Société Générale", "id": "26000CBF", "title": "V.I.E. Compliance Specialist", "location": "Milan, Italie", "url": "https://careers.societegenerale.com/en/job-offers/vie-compliance-specialist-26000CBF-en", "date": "2026-05-20", "source": "societegenerale", "is_new": false}];
+
+(function () {
+  "use strict";
+
+  var grid = document.getElementById("grid");
+  var empty = document.getElementById("empty");
+  var countEl = document.getElementById("count");
+  var select = document.getElementById("company");
+
+  // Normalise: everything the DOM touches must be a string.
+  var offers = (Array.isArray(OFFERS) ? OFFERS : []).map(function (o) {
+    o = o || {};
+    return {
+      company: String(o.company || ""),
+      title: String(o.title || ""),
+      location: String(o.location || ""),
+      url: String(o.url || ""),
+      date: String(o.date || ""),
+      is_new: o.is_new === true
+    };
+  });
+
+  // Sort by date descending; offers without a date go last (BNP has none).
+  offers.sort(function (a, b) {
+    if (a.date === b.date) return a.company.localeCompare(b.company);
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return a.date < b.date ? 1 : -1;
+  });
+
+  // Company dropdown, built from the data actually present.
+  var companies = [];
+  offers.forEach(function (o) {
+    if (o.company && companies.indexOf(o.company) === -1) companies.push(o.company);
+  });
+  companies.sort(function (a, b) { return a.localeCompare(b); });
+  companies.forEach(function (c) {
+    var opt = document.createElement("option");
+    opt.value = c;
+    opt.textContent = c;
+    select.appendChild(opt);
+  });
+
+  // '2026-08-07' -> '7 Aug 2026'. Spelled-out month on purpose: 07/08/2026 reads
+  // as 7 August to a British reader and 8 July to an American one. Built from the
+  // string parts rather than new Date(iso), which would parse as UTC midnight and
+  // slip to the previous day for viewers west of Greenwich.
+  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  function formatDate(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+    if (!m) return iso;
+    var month = MONTHS[parseInt(m[2], 10) - 1];
+    if (!month) return iso;
+    return parseInt(m[3], 10) + " " + month + " " + m[1];
+  }
+
+  function metaLine(text, className) {
+    var span = document.createElement("span");
+    if (className) span.className = className;
+    span.textContent = text;
+    return span;
+  }
+
+  function buildCard(offer) {
+    var card = document.createElement("article");
+    card.className = offer.is_new ? "card is-new" : "card";
+
+    var top = document.createElement("div");
+    top.className = "card-top";
+
+    var h2 = document.createElement("h2");
+    if (offer.url) {
+      var a = document.createElement("a");
+      a.href = offer.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = offer.title || "(untitled)";
+      h2.appendChild(a);
+    } else {
+      h2.textContent = offer.title || "(untitled)";
+    }
+    top.appendChild(h2);
+
+    if (offer.is_new) {
+      var badge = document.createElement("span");
+      badge.className = "badge";
+      badge.textContent = "New";
+      top.appendChild(badge);
+    }
+    card.appendChild(top);
+
+    var meta = document.createElement("div");
+    meta.className = "meta";
+    if (offer.company) meta.appendChild(metaLine(offer.company, "company"));
+    if (offer.location) meta.appendChild(metaLine(offer.location));
+    if (offer.date) meta.appendChild(metaLine(formatDate(offer.date)));
+    card.appendChild(meta);
+
+    return card;
+  }
+
+  function render() {
+    var filter = select.value;
+    var shown = filter ? offers.filter(function (o) { return o.company === filter; })
+                       : offers;
+
+    grid.textContent = "";
+    var frag = document.createDocumentFragment();
+    shown.forEach(function (o) { frag.appendChild(buildCard(o)); });
+    grid.appendChild(frag);
+
+    empty.hidden = shown.length > 0;
+
+    var newCount = shown.filter(function (o) { return o.is_new; }).length;
+    countEl.textContent = "";
+
+    var strong = document.createElement("strong");
+    strong.textContent = String(shown.length);
+    countEl.appendChild(strong);
+    countEl.appendChild(document.createTextNode(
+      " offer" + (shown.length === 1 ? "" : "s")     // 0 takes the plural in English
+    ));
+    if (newCount) {
+      countEl.appendChild(document.createTextNode(" · "));
+      var n = document.createElement("span");
+      n.className = "new-count";
+      n.textContent = newCount + " new";
+      countEl.appendChild(n);
+    }
+  }
+
+  select.addEventListener("change", render);
+  document.getElementById("updated").textContent =
+    "Generated on " + new Date().toLocaleString("fr-FR");
+  render();
+})();
+</script>
+
+</body>
+</html>
